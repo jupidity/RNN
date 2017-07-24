@@ -1,6 +1,5 @@
 /*
 Prototype/test code for simple neural net
-based on the tutorial at https://www.youtube.com/watch?v=KkwX7FkLfug
 4/4/16
 */
 
@@ -104,18 +103,20 @@ typedef vector<Neuron> Layer;
 class Net {
 public:
   Net(vector<unsigned> &topology); // constructor that accepts a reference to a network topology
-  void feedForward(const vector<double> &inputVal); // member function that feeds the input values through the network
+  void feedForward(const vector<double> &inputVal); // feeds the input values through the network
   void getResults(vector<double> &outputVal); // returns the results of the back propogation
   void backPropogate(const vector<double> &desiredVal); // back propogates the error through the network
-  vector<Layer>::iterator layerItr(){return m_layers.begin();}
+  vector<Layer>::iterator layerItr(){return m_layers.begin();} // returns an iterator pointing to the start of the layer
 private:
   vector<Layer> m_layers; // the vector of layers that is the network
-  double m_error;
-  double m_recentAverageError;
+  double m_error; // total error in backpropogation
+  double m_recentAverageError; // the recent average of the error
   double m_recentAverageErrorSmoothingFactor;
 };
 
+// constructor for the Net class. Accepts a vector of unsigneds defining the network topology.
 Net::Net(vector<unsigned> &topology) {
+
   // iterate through the vector of unsigned ints to append Layers to m_layer for each layer in network
   for ( vector<unsigned>::iterator layerNum = topology.begin(); layerNum != topology.end(); ++layerNum ) {
     m_layers.push_back(Layer());
@@ -123,12 +124,14 @@ Net::Net(vector<unsigned> &topology) {
     for (unsigned neuronNum =0; neuronNum<= *layerNum; ++neuronNum){
       unsigned nextLayer = layerNum == topology.end()-- ? 0 : *(layerNum++);
       m_layers.back().push_back(Neuron(nextLayer, neuronNum));
-      cout << "made a Neuron!" << endl;
+      cout << "made a Neuron!" << endl; // should output every time a neuron is added to the layer
     }
   }
 };
 
-void Net::feedForward(const vector<double> &inputVal){
+// performs the feedforward propogation.
+void Net::feedForward(const vector<double> &inputVal){ // Accepts a reference to a read-only vector of doubles containing the input values.
+
   // check that the input vector is the correct size
   assert(inputVal.size() == m_layers[0].size() - 1);
 
@@ -147,26 +150,30 @@ void Net::feedForward(const vector<double> &inputVal){
   }
 };
 
+
 void Net::getResults(vector<double> &outputVal){
 
 };
 
+
 void Net::backPropogate(const vector<double> &desiredVal){
 
+  // check that the number of desired values is equal to the size of the previous layer
   assert(desiredVal.size() == m_layers.size() -1);
 
   //calculate overall net error from output neurons
   m_error = 0.0;
   Layer &outputLayer = m_layer.back();
 
+  // loop through the previous layer Neurons
   for (n= 0; n < outputLayer.size()-1; ++n ){
-    double delta = outputLayer[n].getOutput() - desiredVal[n];
-    m_error += delta * delta;
+    double delta = outputLayer[n].getOutput() - desiredVal[n]; // calculate the gradient
+    m_error += delta * delta; // add the square to the error
   }
-  m_error = sqrt(m_error / (outputLayer.size() -1));
+  m_error = sqrt(m_error / (outputLayer.size() -1)); // find the |error| of the previous layer
 
   m_recentAverageError = (m_recentAverageError * m_recentAverageErrorSmoothingFactor + m_error)
-  / ( m_recentAverageErrorSmoothingFactor +1 );
+  / ( m_recentAverageErrorSmoothingFactor +1 ); // calulate the recent error
 
   // calculate output layer gradients
   for (unsigned n = 0 ; n < outputLayer.size() -1; ++n){

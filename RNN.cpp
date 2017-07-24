@@ -23,50 +23,56 @@ struct connection {
 
 class Neuron {
 public:
-  static double transferFunction(double x);
-  static double transferFunctionDerivative(double x);
-  Neuron(unsigned numConnections, unsigned m_myIndex);
-  void setOutput(double value){m_output = value;};
+  static double transferFunction(double x); // computer the mathematical transfer function between links
+  static double transferFunctionDerivative(double x); // computes the derivative of the transfer funtion between links
+  Neuron(unsigned numConnections, unsigned m_myIndex); // Neuron class constructor
+  void setOutput(double value){m_output = value;}; // sets the output value of the neuron
   double getOutput()const {return m_output};
-  void feedForward(const Layer &prevLayer);
-  void calculateGradient(double targetVals);
+  void feedForward(const Layer &prevLayer); // performs feedForward learning when passed outputs on prev layer
+  void calculateGradient(double targetVals); // calulates the gradient when passed the desired values
   void calculateHiddenGradients(const Layer &nextLayer);
 private:
   static double m_alpha; // momentum of the neuron, able to be tweaked
   static double m_eta; // learning rate of the network
-  double m_output;
-  vector<connection> m_connections;
+  double m_output; // output value of neuron
+  vector<connection> m_connections; // vector of connections in network
   double randWeight() { return (rand() /double(RAND_MAX));};
-  unsigned m_myIndex;
+  unsigned m_myIndex; // index of the neuron in the layer
 
 };
 
 Neuron::calculateHiddenGradients(const Layer &nextLayer){
 
 
-
 }
 
+
+// calculates the first oreder gradient when passed the target value
 Neuron::calculateGradient(double targetVals){
 
-  double delta = targetVal - m_output;
-  m_gradient = delta * Neuron::transferFunctionDerivative(m_output);
+  double delta = targetVal - m_output;  // calculate derivative
+  m_gradient = delta * Neuron::transferFunctionDerivative(m_output); // update m_gradient value w/ learning rate
 
 }
 
+
+// constructor for the Neuron class
 Neuron::Neuron(unsigned numConnections, unsigned myIndex) {
+
   // append the connections vector with connection structs for each connection
-  for (int c = 0; c <= numConnections; ++c){
-    m_connections.push_back(connection());
-    m_connections.back().weight = randWeight();
-    m_connections.back().weightDerivative = 0;
+  for (unsigned c = 0; c <= numConnections; ++c){
+    m_connections.push_back( connection() );
+    m_connections.back().weight = randWeight(); // initializes weight with a random value
+    m_connections.back().weightDerivative = 0; // derivative starts at 0
   }
-  m_myIndex = myIndex;
+  m_myIndex = myIndex; // Neuron is gnostic of index
 }
+
 
 Neuron::transferFunction(double x){
   // this is the mathematical relationship that defines the feedforward operation
   // the only requirements are that its bounded at |1| and smooth
+  // for this application we will use hyperbolic tangent
   return tanh(x);
 }
 
@@ -75,15 +81,17 @@ Neuron::transferFunctionDerivative(double x){
   return 1 - x * x; // appx = for the interval [1,-1]
 }
 
+
+// performs feedforward learning based on outputs from previous layer
 Neuron::feedForward(const Layer &prevLayer){
 
+  // calculate the total output weight on this neuron
   double sum = 0.0;
-
   for (unsigned n = 0; n < prevLayer.size(); ++n){
     sum += prevLayer[n].getOutput() * prevLayer[n]::connection[myIndex].weight;
   }
 
-  m_output = Neuron::transferFunction(sum);
+  m_output = Neuron::transferFunction(sum); // pass sum to the transfer function
 
 }
 

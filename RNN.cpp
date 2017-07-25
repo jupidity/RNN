@@ -19,13 +19,18 @@ struct connection {
 };
 
 
+// declare the neuron class so you can define a Layer
+class Neuron;
 
+// define Layer to be a vector of Neurons
+typedef vector<Neuron> Layer;
 
 //------------------------------------ Neuron Class ---------------------------------------------//
 
 class Neuron {
 public:
-  static double transferFunction(double x); // computer the mathematical transfer function between links
+  
+  static double transferFunction(double x); // compute the mathematical transfer function between links
   static double transferFunctionDerivative(double x); // computes the derivative of the transfer funtion between links
   Neuron(unsigned numConnections, unsigned m_myIndex); // Neuron class constructor
   void setOutput(double value){m_output = value;}; // sets the output value of the neuron
@@ -34,11 +39,11 @@ public:
   void calculateGradient(double targetVals); // calulates the gradient when passed the desired values
   void calculateHiddenGradients(const Layer &nextLayer);
   void updateWeights (Layer & prevLayer); // updates the weight of the neuron based on output of the prev layer
-  void setStaticParameters (double alpha, double eta) {m_alpha = alpha; m_eta = eta;}; // sets static vars
+  static double alpha; // momentum of the neuron, able to be tweaked
+  static double eta; // learning rate of the network 
 
 private:
-  static double m_alpha; // momentum of the neuron, able to be tweaked
-  static double m_eta; // learning rate of the network
+  
   double m_output; // output value of neuron
   vector<connection> m_connections; // vector of connections in network
   double randWeight() { return (rand() /double(RAND_MAX));};
@@ -47,11 +52,10 @@ private:
 
 };
 
-// define Layer to be a vector of Neurons
-typedef vector<Neuron> Layer;
+
 
 // updates weights of the neuron based on output of the prev layer
-void updateWeights (Layer & prevLayer) {
+void Neuron::updateWeights (Layer & prevLayer) {
 
 
 };
@@ -84,14 +88,14 @@ Neuron::Neuron(unsigned numConnections, unsigned myIndex) {
 }
 
 
-static double Neuron::transferFunction(double x){
+double Neuron::transferFunction(double x){
   // this is the mathematical relationship that defines the feedforward operation
   // the only requirements are that its bounded at |1| and smooth
   // for this application we will use hyperbolic tangent
   return tanh(x);
 };
 
-static double Neuron::transferFunctionDerivative(double x){
+double Neuron::transferFunctionDerivative(double x){
   // derivative of tanh(x) is 1-tanh^2(x)
   return 1 - x * x; // appx = for the interval [1,-1]
 };
@@ -103,7 +107,7 @@ void Neuron::feedForward(const Layer &prevLayer){
   // calculate the total output weight on this neuron
   double sum = 0.0;
   for (unsigned n = 0; n < prevLayer.size(); ++n){
-    sum += prevLayer[n].getOutput() * prevLayer[n]::connection[myIndex].weight;
+    sum += prevLayer[n].getOutput() * prevLayer[n].m_connections[m_myIndex].weight;
   }
 
   m_output = Neuron::transferFunction(sum); // pass sum to the transfer function
@@ -156,7 +160,7 @@ void Net::feedForward(const vector<double> &inputVal){ // Accepts a reference to
   // loop through the first layer input neurons
   for (unsigned i = 0; i < m_layers[0].size(); ++i ){
     // set the nth neuron in the first layer to have an output equal to the nth input vector value
-    m_layers[0][i]->setOutput(inputVal[i]);
+    m_layers[0][i].setOutput(inputVal[i]);
   }
 
   // now that the inputs are set, lets feed forward the values
@@ -173,13 +177,6 @@ void Net::getResults(vector<double> &outputVal){
 
 };
 
-void Net::setStaticParameters(double alpha, double eta){
-
-    assert(m_layers.size() > 0);
-
-    m_layers[0].setStaticParameters(alpha,eta);
-};
-
 
 
 
@@ -190,29 +187,29 @@ void Net::backPropogate(const vector<double> &desiredVal){
 
   //calculate overall net error from output neurons
   m_error = 0.0;
-  Layer* outputLayer = m_layers.back(); // returns a reference to the last layer
+  Layer& outputLayer = m_layers.back(); // returns a reference to the last layer
 
   // loop through the previous layer Neurons
-  for ( unsigned n= 0; n < outputLayer->size()-1; ++n ){
-    double delta = *outputLayer[n].getOutput() - desiredVal[n]; // calculate the gradient
+  for ( unsigned n= 0; n < outputLayer.size()-1; ++n ){
+    double delta = outputLayer[n].getOutput() - desiredVal[n]; // calculate the gradient
     m_error += delta * delta; // add the square to the error
   }
-  m_error = sqrt(m_error / (outputLayer->size() -1)); // find the |error| of the previous layer
+  m_error = sqrt(m_error / (outputLayer.size() -1)); // find the |error| of the previous layer
 
   m_recentAverageError = (m_recentAverageError * m_recentAverageErrorSmoothingFactor + m_error)
   / ( m_recentAverageErrorSmoothingFactor +1 ); // calulate the recent error
 
   // calculate output layer gradients
-  for (unsigned n = 0 ; n < outputLayer->size() -1; ++n){
+  for (unsigned n = 0 ; n < outputLayer.size() -1; ++n){
     outputLayer[n].calculateGradient(desiredVal[n]);
   }
 
   // calculate gradients on hidden layers
   for (unsigned layerNum = (m_layers.size()-1); layerNum > 0; --layerNum){
-    Layer* hiddenLayer = &m_layers[layerNum]; // get a pointer to the last layer
-    Layer* nextHiddenLayer = &m_layers[layerNum + 1];
+    Layer& hiddenLayer = m_layers[layerNum]; // get a pointer to the last layer
+    Layer& nextHiddenLayer = m_layers[layerNum + 1];
 
-    *hiddenLayer[layerNum].calculateHiddenGradients(*nextHiddenLayer);
+    hiddenLayer[layerNum].calculateHiddenGradients(nextHiddenLayer);
   }
 
   // for all layers from outputs to first input layer, calcualte new weights
@@ -235,6 +232,8 @@ void Net::backPropogate(const vector<double> &desiredVal){
 
 int main() {
 
+  
+
   // define a network topology, here its a 4-3-1 net
   vector<unsigned> topology;
   topology.push_back(4);
@@ -249,8 +248,10 @@ int main() {
   // create an instance of a neural net and pass the topology created above
   Net NeuralNet(topology);
 
-  NeuralNet.setStaticParameters(.5,.15); // set static parameters for class Neuron
 
+
+
+  
 
 
 

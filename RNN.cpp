@@ -32,7 +32,7 @@ public:
   
   static double transferFunction(double x); // compute the mathematical transfer function between links
   static double transferFunctionDerivative(double x); // computes the derivative of the transfer funtion between links
-  Neuron(unsigned numConnections, unsigned m_myIndex); // Neuron class constructor
+  Neuron(unsigned numConnections, unsigned myIndex); // Neuron class constructor
   void setOutput(double value){m_output = value;}; // sets the output value of the neuron
   double getOutput()const {return m_output;};
   void feedForward(const Layer &prevLayer); // performs feedForward learning when passed outputs on prev layer
@@ -76,7 +76,7 @@ void Neuron::calculateGradient(double targetVal){
 
 
 // constructor for the Neuron class
-Neuron::Neuron(unsigned numConnections, unsigned myIndex) {
+Neuron::Neuron(unsigned numConnections, unsigned myIndex) : m_myIndex(myIndex){
 
   // append the connections vector with connection structs for each connection
   for (unsigned c = 0; c <= numConnections; ++c){
@@ -84,7 +84,7 @@ Neuron::Neuron(unsigned numConnections, unsigned myIndex) {
     m_connections.back().weight = randWeight(); // initializes weight with a random value
     m_connections.back().weightDerivative = 0; // derivative starts at 0
   }
-  m_myIndex = myIndex; // Neuron is gnostic of index
+  //m_myIndex = myIndex; // Neuron is gnostic of index
 }
 
 
@@ -138,12 +138,16 @@ private:
 // constructor for the Net class. Accepts a vector of unsigneds defining the network topology.
 Net::Net(vector<unsigned> &topology) {
 
-  // iterate through the vector of unsigned ints to append Layers to m_layer for each layer in network
+  // for each layer in the net 
   for ( vector<unsigned>::iterator layerNum = topology.begin(); layerNum != topology.end(); ++layerNum ) {
-    m_layers.push_back(Layer());
-    // for each new Layer in m_layers, add as many Neurons as is specified by the topology
-    for (unsigned neuronNum =0; neuronNum<= *layerNum; ++neuronNum){
-      unsigned nextLayer = layerNum == topology.end()-- ? 0 : *(layerNum++);
+    m_layers.push_back(Layer()); // append a layer to m_layers
+
+    // for each neuron specified by the topology
+    for (unsigned neuronNum =0; neuronNum < *layerNum; ++neuronNum){
+
+      // in order to construct a neuron, we need to know the number of connections and its number in the layer 
+      // if its the last layer, it has no connections, else get the number of neurons in the next layer 
+      unsigned nextLayer = layerNum == topology.end()-- ? 0 : *(layerNum++); 
       m_layers.back().push_back(Neuron(nextLayer, neuronNum));
       cout << "made a Neuron!" << endl; // should output every time a neuron is added to the layer
     }
@@ -236,9 +240,11 @@ int main() {
 
   // define a network topology, here its a 4-3-1 net
   vector<unsigned> topology;
-  topology.push_back(4);
   topology.push_back(3);
+  topology.push_back(4);
+  topology.push_back(2);
   topology.push_back(1);
+
 
   // define the desired state variables to pass to the object
   vector<double> desiredVals;
@@ -247,13 +253,6 @@ int main() {
 
   // create an instance of a neural net and pass the topology created above
   Net NeuralNet(topology);
-
-
-
-
-  
-
-
 
   return 0;
 }
